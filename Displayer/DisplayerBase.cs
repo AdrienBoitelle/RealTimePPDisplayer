@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,7 +28,9 @@ namespace RealTimePPDisplayer.Displayer
 
     public struct HitCountTuple
     {
+        public int Count300g;
         public int Count300;
+        public int Count200;
         public int Count100;
         public int Count50;
         public int CountMiss;
@@ -50,7 +52,9 @@ namespace RealTimePPDisplayer.Displayer
         /// <summary>
         /// Update HitCount
         /// </summary>
+        /// <param name="n300g">300G count</param>
         /// <param name="n300">300 count</param>
+        /// <param name="n200">200 count</param>
         /// <param name="n100">100 count</param>
         /// <param name="n50">50 count</param>
         /// <param name="nmiss">miss count</param>
@@ -122,8 +126,12 @@ namespace RealTimePPDisplayer.Displayer
             {
                 switch (arg)
                 {
+                    case "n300g":
+                        formatter.Fill(arg, tuple.Count300g); break;
                     case "n300":
                         formatter.Fill(arg, tuple.Count300); break;
+                    case "n200":
+                        formatter.Fill(arg, tuple.Count200); break;
                     case "n100":
                         formatter.Fill(arg, tuple.Count100); break;
                     case "n50":
