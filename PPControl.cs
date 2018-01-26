@@ -111,24 +111,15 @@ namespace RealTimePPDisplayer
                 m_nmiss = 0;
             }
             
-            PPTuple pp_tuple;
-            var result=m_beatmap_reader.GetMaxPP(m_cur_mods);
-            pp_tuple.MaxPP = result.total;
-            pp_tuple.MaxAimPP = result.aim;
-            pp_tuple.MaxSpeedPP = result.speed;
-            pp_tuple.MaxAccuracyPP = result.acc;
+            PPTuple pp_tuple = PPTuple.Empty;
+            var result=m_beatmap_reader.GetMaxPPMania(m_cur_mods);
+            pp_tuple.MaxPP = result;
 
-            result = m_beatmap_reader.GetIfFcPP(m_cur_mods, m_n300, m_n100, m_n50, m_nmiss);
-            pp_tuple.FullComboPP = result.total;
-            pp_tuple.FullComboAimPP = result.aim;
-            pp_tuple.FullComboSpeedPP = result.speed;
-            pp_tuple.FullComboAccuracyPP = result.acc;
+            result = m_beatmap_reader.GetIfFCPPMania(m_cur_mods, 900000,99.0);
+            pp_tuple.FullComboPP = result;
 
-            result = m_beatmap_reader.GetRealTimePP(time, m_cur_mods, m_n100, m_n50, m_nmiss, m_max_combo);
-            pp_tuple.RealTimePP = result.total;
-            pp_tuple.RealTimeAimPP = result.aim;
-            pp_tuple.RealTimeSpeedPP = result.speed;
-            pp_tuple.RealTimeAccuracyPP = result.acc;
+            result = m_beatmap_reader.GetRealTimePPMania(m_cur_mods, time, 50000,95.0);
+            pp_tuple.RealTimePP = result;
 
             if (double.IsNaN(pp_tuple.RealTimePP)) pp_tuple.RealTimePP = 0.0;
             if (Math.Abs(pp_tuple.RealTimePP) > pp_tuple.MaxPP) pp_tuple.RealTimePP = 0.0;
@@ -137,18 +128,6 @@ namespace RealTimePPDisplayer
             foreach(var p in m_displayers)
             {
                 p.Value.OnUpdatePP(pp_tuple);
-                if (Setting.DisplayHitObject)
-                {
-                    HitCountTuple hit_tuple;
-                    hit_tuple.Count300 = m_n300;
-                    hit_tuple.Count100 = m_n100;
-                    hit_tuple.Count50 = m_n50;
-                    hit_tuple.CountMiss = m_nmiss;
-                    hit_tuple.Combo = m_combo;
-                    hit_tuple.FullCombo = m_beatmap_reader.FullCombo;
-                    hit_tuple.MaxCombo = m_max_combo;
-                    p.Value.OnUpdateHitCount(hit_tuple);
-                }
                 p.Value.Display();
             }
 

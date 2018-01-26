@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -89,9 +90,23 @@ namespace RealTimePPDisplayer.Beatmap
         }
 
         private ModsInfo _max_mods = ModsInfo.Empty;
-        private Oppai.pp_calc _max_result;
+        private double _max_result;
 
-        public Oppai.pp_calc GetMaxPP(ModsInfo mods)
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct ppmania_params
+        {
+            public UInt32 mods;
+            public int score;
+            public double acc;
+        }
+
+        public void get_ppmania(byte[] data, UInt32 data_size, ref ppmania_params args, ref double result)
+        {
+            result = 1337.0;
+        }
+
+        public double GetMaxPPMania(ModsInfo mods)
         {
             bool need_update = false;
             need_update = need_update || mods != _max_mods;
@@ -100,131 +115,61 @@ namespace RealTimePPDisplayer.Beatmap
             {
                 _max_mods = mods;
 
-                Oppai.rtpp_params args;
-                args.combo = Oppai.FullCombo;
+                ppmania_params args;
                 args.mods = (uint)mods.Mod;
-                args.n300 = 0;
-                args.n200 = 0;
-                args.n100 = 0;
-                args.n50 = 0;
-                args.nmiss = 0;
+                args.score = 1000000;
+                args.acc = 100.0;
+                
+                get_ppmania(m_beatmap_raw, (uint)m_beatmap_raw.Length, ref args, ref _max_result);
+            }
+            return _max_result;
+        }
+       
 
-                //Cache Beatmap
-                Oppai.get_ppv2(m_beatmap_raw, (uint)m_beatmap_raw.Length,ref args, false,m_cache,ref _max_result);
+        public double GetIfFCPPMania(ModsInfo mods, int curr_score, double curr_acc)
+        {
+            bool need_update = false;
+            need_update = need_update || mods != _max_mods;
+
+            if (need_update)
+            {
+                _max_mods = mods;
+
+                ppmania_params args;
+                args.mods = (uint)mods.Mod;
+                args.score = curr_score; // Provide current score
+                args.acc = curr_acc;
+
+                get_ppmania(m_beatmap_raw, (uint)m_beatmap_raw.Length, ref args, ref _max_result);
             }
             return _max_result;
         }
 
-        private int _fc_n300 = -1;
-        private int _fc_n200 = -1;
-        private int _fc_n100 = -1;
-        private int _fc_n50 = -1;
-        private Oppai.pp_calc _fc_result;
 
-        public Oppai.pp_calc GetIfFcPP(int n300g, int n300,int n200,int n100,int n50,int nmiss)
+        public double GetRealTimePPMania(ModsInfo mods, int offset, int curr_score, double curr_acc)
         {
-            double acc=Oppai.acc_calc(n300g, n300,n200, n100, n50, nmiss)*100.0;
-            Oppai.acc_round(acc, m_cache.nobjects, nmiss,out n300g, out n300,out n200, out n100, out n50);
-
             bool need_update = false;
-            need_update = need_update || _fc_n300 != n300;
-            need_update = need_update || _fc_n200 != n200;
-            need_update = need_update || _fc_n100 != n100;
-            need_update = need_update || _fc_n50 != n50;
-
+            need_update = need_update || mods != _max_mods;
 
             if (need_update)
             {
-         
-                _fc_n300 = n300;
-                _fc_n200 = n200;
-                _fc_n100 = n100;
-                _fc_n50 = n50;
+                _max_mods = mods;
 
-                Oppai.rtpp_params args;
-                args.combo = Oppai.FullCombo;
+                ppmania_params args;
                 args.mods = (uint)mods.Mod;
-                args.n300 = n300;
-                args.n200 = n200;
-                args.n100 = n100;
-                args.n50 = n50;
-                args.nmiss = 0;
+                args.score = curr_score; // Provide current score
+                args.acc = curr_acc;
 
-                Oppai.get_ppv2(m_beatmap_raw, (uint)m_beatmap_raw.Length,ref args,true,m_cache,ref _fc_result);
+                // m_beatmap_raw should be limited to the given offset
+                get_ppmania(m_beatmap_raw, (uint)m_beatmap_raw.Length, ref args, ref _max_result);
             }
-
-            return _fc_result;
-        }
-
-        private int _pos = -1;
-        private int _n300 = -1;
-        private int _n200 = -1;
-        private int _n100 = -1;
-        private int _n50 = -1;
-        private int _nmiss = -1;
-        private int _max_combo = -1;
-        private Oppai.pp_calc _rtpp_result;
-
-        public Oppai.pp_calc GetRealTimePP(int end_time, int n300, int n200, int n100,int n50,int nmiss,int max_combo)
-        {
-            int pos = GetPosition(end_time);
-
-            bool need_update = false;
-            need_update = need_update || _pos != pos;
-            need_update = need_update || _n300 != n300;
-            need_update = need_update || _n200 != n200;
-            need_update = need_update || _n100 != n100;
-            need_update = need_update || _n50 != n50;
-            need_update = need_update || _nmiss != nmiss;
-            need_update = need_update || _max_combo != max_combo;
-
-            if (need_update)
-            {
-                _pos = pos;
-                _n300 = n300;
-                _n200 = n200;
-                _n100 = n100;
-                _n50 = n50;
-                _nmiss = nmiss;
-                _max_combo = max_combo;
-
-                Oppai.rtpp_params args;
-                args.combo = max_combo;
-                args.mods = (uint)mods.Mod;
-                args.n300 = n300;
-                args.n200 = n200;
-                args.n100 = n100;
-                args.n50 = n50;
-                args.nmiss = nmiss;
-
-                if(!Oppai.get_ppv2(m_beatmap_raw, (uint)pos, ref args, false,null, ref _rtpp_result))
-                {
-                    return Oppai.pp_calc.Empty;
-                }
-            }
-
-            return _rtpp_result;
+            return _max_result;
         }
 
         public void Clear()
         {
-            _pos = -1;
-            _n300 = -1;
-            _n200 = -1;
-            _n100 = -1;
-            _n50 = -1;
-            _nmiss = -1;
-            _max_combo = -1;
-            _rtpp_result = Oppai.pp_calc.Empty;
-
-            _fc_n300 = -1;
-            _fc_n200 = -1;
-            _fc_n100 = -1;
-            _fc_n50 = -1;
-            _fc_result = Oppai.pp_calc.Empty;
-
             _max_mods = ModsInfo.Empty;
-            _max_result = Oppai.pp_calc.Empty;
+            _max_result = 0.0;
         }
     }
 }
